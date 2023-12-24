@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "APITestingBasic", "APITesti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CRUD-Operations", "CRUD-Operations\CRUD-Operations.csproj", "{ED945108-5E50-43FD-91F3-AF49C187171F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskManagerUsingAPI", "TaskManagerUsingAPI\TaskManagerUsingAPI.csproj", "{60E07FCF-D915-48C6-B6D1-A2652221EA67}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{ED945108-5E50-43FD-91F3-AF49C187171F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ED945108-5E50-43FD-91F3-AF49C187171F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ED945108-5E50-43FD-91F3-AF49C187171F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60E07FCF-D915-48C6-B6D1-A2652221EA67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60E07FCF-D915-48C6-B6D1-A2652221EA67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60E07FCF-D915-48C6-B6D1-A2652221EA67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60E07FCF-D915-48C6-B6D1-A2652221EA67}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

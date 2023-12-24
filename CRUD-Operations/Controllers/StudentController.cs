@@ -77,7 +77,7 @@ namespace CRUD_Operations.Controllers
             {
                 Student student = _container.GetItemLinqQueryable<Student>(true).Where(q => q.DocumentType == "student" && q.UId == uId).AsEnumerable().FirstOrDefault();
 
-                // Reverse MApping 
+                // Reverse Mapping 
                 var studentModel = new StudentModel();
                 studentModel.Name = student.Name;
                 studentModel.Age = student.Age;
@@ -109,12 +109,100 @@ namespace CRUD_Operations.Controllers
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> DeleteStudentByUId(string uId)
+        {
+            try
+            {
+                var partitionKey = new PartitionKey("student");
 
+                // Use DeleteItemAsync to delete by Id and partition key
+                var deleteResponse = await _container.DeleteItemAsync<Student>(
+                    partitionKey: partitionKey,
+                    id: uId
+                );
+
+                if (deleteResponse.StatusCode == System.Net.HttpStatusCode.NoContent)
+                {
+                    return Ok($"Student with UId '{uId}' deleted successfully.");
+                }
+                else if (deleteResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return NotFound($"Student with UId '{uId}' not found.");
+                }
+                else
+                {
+                    return StatusCode((int)deleteResponse.StatusCode, $"Failed to delete student with UId '{uId}'.");
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Data Delete Failed: {ex.Message}");
+            }
+        }
+
+        [HttpPut("{uId}")]
+        public async Task<IActionResult> UpdateStudentByUId(string uId, UpdatedStudentModel updatedStudentModel)
+        {
+            try
+            {
+                // Retrieve the student by UId
+                Student existingStudent = _container.GetItemLinqQueryable<Student>(true)
+                    .Where(q => q.DocumentType == "student" && q.UId == uId)
+                    .AsEnumerable()
+                    .FirstOrDefault();
+
+                if (existingStudent == null)
+                {
+                    return NotFound($"Student with UId '{uId}' not found.");
+                }
+
+                // Update the properties of the existing student
+                existingStudent.Name = updatedStudentModel.Name;
+                existingStudent.Age = updatedStudentModel.Age;
+                existingStudent.RollNo = updatedStudentModel.RollNo;
+
+                existingStudent.UpdatedOn = DateTime.Now;
+                existingStudent.UpdatedByName = "Updated User";  // Replace with the actual user updating the record
+                existingStudent.UpdatedBy = "Updated User's UId";  // Replace with the actual user's UId updating the record
+
+                existingStudent.Version++; // Increment the version
+
+                // Use ReplaceItemAsync to update the student in CosmosDB
+                var replaceResponse = await _container.ReplaceItemAsync<Student>(
+                    partitionKey: new PartitionKey(existingStudent.DocumentType),
+                    id: existingStudent.Id,
+                    item: existingStudent
+                );
+
+                if (replaceResponse.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    // Reverse Mapping 
+                    var updatedStudentModel = new StudentModel
+                    {
+                        Name = existingStudent.Name,
+                        Age = existingStudent.Age,
+                        RollNo = existingStudent.RollNo
+                    };
+
+                    return Ok(updatedStudentModel);
+                }
+                else
+                {
+                    return StatusCode((int)replaceResponse.StatusCode, $"Failed to update student with UId '{uId}'.");
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Data Update Failed: {ex.Message}");
+            }
+        }
+   
 
         private Container GetContainer() // DRY
         {
             CosmosClient cosmosclient = new CosmosClient(URI, PrimaryKey);
-            // step 2 Connect with Our Databse
+            // step 2 Connect with Our Database
             Database databse = cosmosclient.GetDatabase(DatabaseName);
             // step 3 Connect with Our Container 
             Container container = databse.GetContainer(ContainerName);
