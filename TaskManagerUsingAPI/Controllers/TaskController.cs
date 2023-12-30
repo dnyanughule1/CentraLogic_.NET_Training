@@ -12,123 +12,168 @@ namespace TaskManagerUsingAPI.Controllers
     [ApiController]
     public class TaskController : ControllerBase
     {
+        /*
         public string URI = "https://localhost:8081";
         public string PrimaryKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
         public string DatabaseName = "PersonalTaskManagerDB";
-        public string ContainerName = "TaskContainer";
+        public string ContainerName = "Task";
+        */
+        public Container container;
 
-        public readonly Container _container; // null 
         public TaskController()
         {
-            _container = GetContainer();
+            container = GetContainer();
         }
-
         [HttpPost]
         public async Task<IActionResult> AddTask(TaskModel taskModel)
         {
-            TaskDetails taskDetails = new TaskDetails();
-            taskDetails.TaskName = taskModel.TaskName;
-            taskDetails.TaskDescription = taskModel.TaskDescription;
+            try
+            {
 
-            taskDetails.Id = Guid.NewGuid().ToString();
-            taskDetails.UId = taskDetails.Id;
-            taskDetails.DocumentType = "TaskDB";
+                Tasks task = new Tasks();
+                task.TaskName = taskModel.TaskName;
+                task.TaskDescription = taskModel.TaskDescription;
 
-            taskDetails.CreatedOn = DateTime.Now;
-            taskDetails.CreatedByName = "Dnyaneshwar";
-            taskDetails.CreatedBy = "Dnyaneshwar's UId";
+                //Assign mandetory field
+                task.Id = Guid.NewGuid().ToString();
+                task.UId = task.Id;
+                task.DocumentType = "task";
+                task.CreatedBy = "Dnyaneshwar's UId"; //UId of who created this data
+                task.CreatedByName = "Dnyaneshwar";
+                task.CreatedOn = DateTime.Now;
+                task.UpdatedBy = "Dnyaneshwar's UId";
+                task.UpdatedByName = "Dnyaneshwar";
+                task.UpdatedOn = DateTime.Now;
+                task.Version = 1;
+                task.Active = true;
+                task.Archieved = false;
 
-            taskDetails.UpdatedOn = DateTime.Now;
-            taskDetails.UpdatedByName = "Dnyaneshwar";
-            taskDetails.UpdatedBy = "Dnyaneshwar's UId";
+                //Add data to Database
+                task = await container.CreateItemAsync(task);
 
-            taskDetails.Version = 1;
-            taskDetails.Active = true;
-            taskDetails.Archieved = false;
-
-            TaskDetails response = await _container.CreateItemAsync(taskDetails);
-
-            //reverse mapping
-            taskModel.TaskName = response.TaskName;
-            taskModel.TaskDescription = response.TaskDescription;
-
-            return Ok(taskModel);
+                //Return model to UI
+                TaskModel model = new TaskModel();
+                model.TaskName = task.TaskName;
+                model.TaskDescription = task.TaskDescription;
+                return Ok(model);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Task Added Failed: {ex.Message}");
+            }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> GetAllTask()
-        {
-            var tasks = _container.GetItemLinqQueryable<TaskDetails>(true).AsEnumerable().ToList();
-            return Ok(tasks);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> GetTaskByUId(string uId)
+        [HttpGet]
+        public IActionResult GetAllTask()
         {
             try
             {
-                TaskDetails tasks = _container.GetItemLinqQueryable<TaskDetails>(true).Where(q => q.DocumentType == "TaskDB" && q.UId == uId).AsEnumerable().FirstOrDefault();
-                var viewTasks = new TaskModel();
-                viewTasks.TaskName = tasks.TaskName;
-                viewTasks.TaskDescription = tasks.TaskDescription;
-                return Ok(viewTasks);
-            }
+                // Get all tasks
+                var tasks = container.GetItemLinqQueryable<Tasks>(true).Where(q => q.DocumentType == "task" && q.Archieved == false && q.Active == true).AsEnumerable().ToList();
 
+                // Map all task data
+                List<TaskModel> taskModelList = tasks.Select(task => new TaskModel
+                {
+                    TaskName = task.TaskName,
+                    TaskDescription = task.TaskDescription
+                }).ToList();
+
+                return Ok(taskModelList);
+            }
             catch (Exception ex)
             {
-                return BadRequest("Invalid Id");
+                return BadRequest($"Task Get Failed: {ex.Message}");
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> UpdateTask(TaskDetails taskDetails)
+
+        [HttpGet]
+        public IActionResult GetStudentByUId(string uId)
         {
-            var existingtask = _container.GetItemLinqQueryable<TaskDetails>(true).Where(q => q.DocumentType == "TaskDB" && q.UId == taskDetails.UId && q.Active == true && q.Archieved == false).AsEnumerable().FirstOrDefault();
-            existingtask.Archieved = true;
-            await _container.ReplaceItemAsync(existingtask, existingtask.Id);
+            try
+            {
+                Tasks task = container.GetItemLinqQueryable<Tasks>(true).Where(q => q.DocumentType == "task" && q.UId == uId).AsEnumerable().FirstOrDefault();
 
-            existingtask.Id = Guid.NewGuid().ToString();
-            existingtask.UpdatedOn = DateTime.Now;
-            existingtask.UpdatedByName = "Dnyaneshwar";
-            existingtask.UpdatedBy = "Dnyaneshwar's UId";
-            existingtask.Version = existingtask.Version + 1;
-            existingtask.Active = true;
-            existingtask.Archieved = false;
+                // Reverse Mapping 
+                var taskModel = new TaskModel();
+                taskModel.TaskName = task.TaskName;
+                taskModel.TaskDescription = task.TaskDescription;
 
-            existingtask.TaskName = taskDetails.TaskName;
-            existingtask.TaskDescription = taskDetails.TaskDescription;
+                return Ok(taskModel);
 
-            existingtask = await _container.CreateItemAsync(existingtask);
+            }
+            catch (Exception ex)
+            {
 
-            TaskDetails details = new TaskDetails();
-            details.UId = existingtask.UId;
-            details.TaskName = existingtask.TaskName;
-            details.TaskDescription = existingtask.TaskDescription;
-
-            return Ok(details);
+                return BadRequest("Task Get Failed");
+            }
         }
-
-        [HttpPost]
-        public async Task<IActionResult> DeleteTask(string taskId)
+        [HttpPut("{uId}")]
+        public async Task<IActionResult> UpdateTaskByUId(string uId, UpdatedTaskModel updatedTaskModel)
         {
-            var deletetask = _container.GetItemLinqQueryable<TaskDetails>(true).Where(q => q.DocumentType == "TaskDB" && q.UId == taskId && q.Active == true && q.Archieved == false).AsEnumerable().FirstOrDefault();
-            deletetask.Active = false;
-            await _container.ReplaceItemAsync(deletetask, deletetask.Id);
+            try
+            {
+                // Retrieve the task by UId
+                Tasks existingTask = container.GetItemLinqQueryable<Tasks>(true).Where(q => q.DocumentType == "task" && q.UId == uId).AsEnumerable().FirstOrDefault();
 
-            return Ok(true);
+                if (existingTask == null)
+                {
+                    return NotFound($"Task with UId '{uId}' not found.");
+                }
+                existingTask.Version++;
+                existingTask.TaskName = updatedTaskModel.TaskName;
+                existingTask.TaskDescription = updatedTaskModel.TaskDescription;
 
+                // Use ReplaceItemAsync to update the task in CosmosDB
+                Tasks replaceResponse = await container.ReplaceItemAsync<Tasks>(existingTask, uId);
+
+                return Ok(replaceResponse);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Data Update Failed: {ex.Message}");
+            }
+        }
+        [HttpDelete]
+        public async Task<IActionResult> DeleteTaskByUId(string taskUId)
+        {
+            try
+            {
+                // Get the task by UId
+                var task = container.GetItemLinqQueryable<Tasks>(true).Where(q => q.UId == taskUId && q.DocumentType == "task" && q.Archieved == false && q.Active == true).AsEnumerable().FirstOrDefault();
+
+                if (task == null)
+                {
+                    return NotFound($"Task with UId '{taskUId}' not found.");
+                }
+
+                // Mark the task as inactive
+                task.Active = false;
+
+                // Use DeleteItemAsync to delete the task in CosmosDB
+                await container.DeleteItemAsync<Tasks>(task.Id, new PartitionKey(task.DocumentType));
+
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Task Deletion Failed: {ex.Message}");
+            }
         }
 
         private Container GetContainer()
         {
-            CosmosClient cosmosclient = new CosmosClient(URI, PrimaryKey);
-            // step 2 Connect with Our Database
-            Database databse = cosmosclient.GetDatabase(DatabaseName);
-            // step 3 Connect with Our Container 
-            Container container = databse.GetContainer(ContainerName);
+            string URI = Environment.GetEnvironmentVariable("cosmos-Uri");
+            string PrimaryKey = Environment.GetEnvironmentVariable("Primary-Key");
+            string DatabaseName = Environment.GetEnvironmentVariable("Database");
+            string ContainerName = Environment.GetEnvironmentVariable("Container");
 
+            CosmosClient cosmosClient = new CosmosClient(URI, PrimaryKey);
+            Database db = cosmosClient.GetDatabase(DatabaseName);
+            Container container = db.GetContainer(ContainerName);
             return container;
         }
-    } 
+
+    }
 
 }

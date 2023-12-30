@@ -2,14 +2,12 @@
 
 namespace TaskManagerUsingAPI.Entity
 {
-    public class TaskDetails
+    public class Tasks
     {
         // Mandatory Feilds
         [JsonProperty(PropertyName = "id")]
-        public string Id { get; set; }
-        // Note :
-        // Code : PascalCase [ FirstName ] 
-        // CosmosDb : camalCases [ firstName ] 
+        public string Id { get; set; } // Code : PascalCase [ FirstName ] 
+                                       // CosmosDb : camalCases [ firstName ] 
 
         // JSON Property : For OUr Code  Pascal [ FirstName ]   but DB CAmelcase 
 
@@ -47,12 +45,15 @@ namespace TaskManagerUsingAPI.Entity
         [JsonProperty(PropertyName = "archieved", NullValueHandling = NullValueHandling.Ignore)]
         public bool Archieved { get; set; }
 
-        //class fields / properties
+
+
+        // Class  Feilds / Properties
+
+
         [JsonProperty(PropertyName = "taskName", NullValueHandling = NullValueHandling.Ignore)]
         public string TaskName { get; set; }
 
-        [JsonProperty(PropertyName = "taskDescription", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "taskDecription", NullValueHandling = NullValueHandling.Ignore)]
         public string TaskDescription { get; set; }
-    
     }
 }
